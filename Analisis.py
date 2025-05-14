@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import io
 
 data = pd.read_csv("adult.csv")
 print(data.head(4))
@@ -14,8 +15,15 @@ class DataAnalyzer:
         self.df = df#definiendo el dataframe el self trabaja el objeto, es como un valor local que el contructor le dice que permanezca a tal
 
     def summary(self):#aqui es para que pida un resumen
-        print(self.df.info())#me da el tipo de dato
-        print(self.df.describe())#hace un conteo un promedio, el minimo, la desvicion, el maximo estadistia o cuartiles
+        buffer = io.StringIO()
+        self.df.info(buf= buffer)#el buffe res un espacio de memoria donde se va guardando cosas una der¡tras de otra
+        salida = buffer.getvalue()
+        salida_describe = self.df.describe().to_string()
+        salida += "\n\n" + salida_describe
+        return salida
+
+        #print(self.df.info())#me da el tipo de dato
+        #print(self.df.describe())#hace un conteo un promedio, el minimo, la desvicion, el maximo estadistia o cuartiles
 
     def missing_values(self):
         return self.df.isnull().sum()
