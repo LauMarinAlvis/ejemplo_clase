@@ -1,60 +1,70 @@
-# Librerías necesarias
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import io
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from PIL import Image
 
-data = pd.read_csv("adult.csv")
-print(data.head(4))
+# Función auxiliar para convertir figura matplotlib a imagen PIL
+def fig_to_pil(fig):
+    buf = io.BytesIO()
+    canvas = FigureCanvasAgg(fig)
+    canvas.draw()
+    canvas.print_png(buf)
+    buf.seek(0)
+    return Image.open(buf)
 
-#hacer analisis generico de los datos usaremos una clase
 class DataAnalyzer:
-    def __init__(self, df):#defino la clase
-        self.df = df#definiendo el dataframe el self trabaja el objeto, es como un valor local que el contructor le dice que permanezca a tal
+    def __init__(self, data):
+        self.df = data
+        self.categorical_analisis_cols = data.select_dtypes(include='object').columns
+        self.numeric_cols = data.select_dtypes(include=np.number).columns
 
-    def summary(self):#aqui es para que pida un resumen
+    def summary(self):
         buffer = io.StringIO()
-        self.df.info(buf= buffer)#el buffe res un espacio de memoria donde se va guardando cosas una der¡tras de otra
-        salida = buffer.getvalue()
+        self.df.info(buf=buffer)
+        salida_info = buffer.getvalue()
         salida_describe = self.df.describe().to_string()
-        salida += "\n\n" + salida_describe
+        salida = salida_info + "\n\n" + salida_describe
         return salida
 
-        #print(self.df.info())#me da el tipo de dato
-        #print(self.df.describe())#hace un conteo un promedio, el minimo, la desvicion, el maximo estadistia o cuartiles
-
     def missing_values(self):
-        return self.df.isnull().sum()
+        return self.df.isnull()
 
-    def imprimir (self):
-        print("Hello")
-
+    def imprimir(self):
+        print("Hola")
 
     def correlation_matrix(self):
-        numeric_cols = self.df.select_dtypes(include=np.number).columns
-        corr = self.df[numeric_cols].corr()
-        plt.figure()#luego de esto debo decir que quiero hacer en setido de graficas
-        sns.heatmap(corr, annot =True, cmap ='coolwarm')#mapa de calor aqui le digo que me selñae con color entre mas rojo mas correlacion hay
-        plt.title('Matriz de Correlación')
-        plt.show()
+        corr = self.df[self.numeric_cols].corr()
+        fig, ax = plt.subplots()
+        sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax)
+        ax.set_title('Matriz de Correlación')
+        return fig_to_pil(fig)
 
     def categorical_analisis(self):
-        categorical_cols = self.df.select_dtypes(include='object').columns
-        print(f"las columnas categoricas son: {categorical_cols}")
-        column = input("digite la columna a visualizar: ")
-
-        if column in categorical_cols:
-            plt.figure()
-            sns.countplot(data = self.df, x= column, order = self.df[column].value_counts().index)
-            plt.xticks(rotation= 45)
-            plt.show()
-
+        print(f"Las columnas categóricas son: {self.categorical_analisis_cols}")
+        column = input("Digite la columna a visualizar: ")
+        if column in self.categorical_analisis_cols:
+            fig, ax = plt.subplots()
+            sns.countplot(data=self.df, x=column, order=self.df[column].value_counts().index, ax=ax)
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+            ax.set_title(f'Análisis de: {column}')
+            return fig_to_pil(fig)
         else:
-            print("la columna no es categorica o esta mal escrita")
+            print("Columna no válida.")
+            return None
 
-
-
-
+    def categorical_analisis_col(self, column):
+        if column in self.categorical_analisis_cols:
+            fig, ax = plt.subplots()
+            sns.countplot(data=self.df, x=column, order=self.df[column].value_counts().index, ax=ax)
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+            ax.set_title(f'Análisis de: {column}')
+            return fig_to_pil(fig)
+        else:
+            print("Columna no válida.")
+            return None
 
